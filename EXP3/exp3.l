@@ -1,65 +1,25 @@
 %{
-#include <stdio.h>
-extern FILE *yyin;
+#include<stdio.h>
+#include<string.h>
 %}
 
-digit      [0-9]
-letter     [a-zA-Z_]
-id         {letter}({letter}|{digit})*
-number     {digit}+(\.{digit}+)?
-keyword    if|else|while|for|do|switch|case|break|continue|return|int|float|double|char|void|long|short|printf|scanf
+digit [0-9]
+letter [a-zA-Z_]
 
 %%
-[ \t\n]+                           ;
-
-
-"//".*                             ;
-"/*"([^*]|\*+[^*/])*\*+"/"         ;
-
-{keyword}                          { printf("%s is a keyword\n", yytext); }
-
-
-"=="                               { printf("%s is an equality operator\n", yytext); }
-"!="                               { printf("%s is a not equal operator\n", yytext); }
-"<="                               { printf("%s is a less than or equal operator\n", yytext); }
-">="                               { printf("%s is a greater than or equal operator\n", yytext); }
-"&&"                               { printf("%s is a logical AND operator\n", yytext); }
-"||"                               { printf("%s is a logical OR operator\n", yytext); }
-"++"                               { printf("%s is an increment operator\n", yytext); }
-"--"                               { printf("%s is a decrement operator\n", yytext); }
-"+="                               { printf("%s is an addition assignment operator\n", yytext); }
-"-="                               { printf("%s is a subtraction assignment operator\n", yytext); }
-"*="                               { printf("%s is a multiplication assignment operator\n", yytext); }
-"/="                               { printf("%s is a division assignment operator\n", yytext); }
-
-
-"+"                                { printf("%s is an arithmetic operator\n", yytext); }
-"-"                                { printf("%s is an arithmetic operator\n", yytext); }
-"*"                                { printf("%s is an arithmetic operator\n", yytext); }
-"/"                                { printf("%s is an arithmetic operator\n", yytext); }
-"%"                                { printf("%s is an arithmetic operator\n", yytext); }
-"="                                { printf("%s is an assignment operator\n", yytext); }
-"<"                                { printf("%s is a less than operator\n", yytext); }
-">"                                { printf("%s is a greater than operator\n", yytext); }
-"!"                                { printf("%s is a logical NOT operator\n", yytext); }
-
-","                                { printf("%s is a comma\n", yytext); }
-";"                                { printf("%s is a semicolon\n", yytext); }
-"("                                { printf("%s is a left parenthesis\n", yytext); }
-")"                                { printf("%s is a right parenthesis\n", yytext); }
-"{"                                { printf("%s is a left brace\n", yytext); }
-"}"                                { printf("%s is a right brace\n", yytext); }
-"["                                { printf("%s is a left bracket\n", yytext); }
-"]"                                { printf("%s is a right bracket\n", yytext); }
-
-
-{number}                           { printf("%s is a number\n", yytext); }
-{id}                               { printf("%s is an identifier\n", yytext); }
-.                                  { printf("%s is an invalid token\n", yytext); }
+[ \t\n]+ ;
+"if"|"else"|"for"|"while"|"break"|"int"|"float"|"char"|"return" {printf("%s is a keyword\n",yytext);}
+[a-zA-Z][a-zA-Z0-9]* {printf("%s is an identifier\n",yytext);}
+[0-9]+ {printf("%s is a number\n",yytext);}
+[0-9]+\.[0-9]+ {printf("%s is a floating number\n",yytext);} 
+">="|"<="|"=="|"++"|"&&"|"||"|"--" {printf("%s is an operator\n",yytext);}
+[+*%<>=!/\-] {printf("%s is an operator\n",yytext);}
+\/\/[^\n]* ;
+\/\*([^*]|\*+[^*/])*\*+\/ ;
+[(){}\[\];,] {printf("%s is a separator\n",yytext);}
 %%
 
-int yywrap()
-{
+int yywrap(){
     return 1;
 }
 

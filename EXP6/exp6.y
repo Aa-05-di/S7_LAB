@@ -1,142 +1,86 @@
 %{
-#include <stdio.h>
-#include <stdlib.h>
+  #include <stdio.h>
+  #include <stdlib.h>
 
-typedef struct Node {
-    char op;
-    int val;
+  typedef struct Node{
+    char data;
     struct Node *left;
     struct Node *right;
-} Node;
+  }Node;
 
-Node* make_num(int val);
-Node* make_op(char op, Node *left, Node *right);
-void preorder(Node *root);
+  Node *createNode(char data, Node *left, Node *right){
+    Node *newNode = (Node*)malloc(sizeof(Node));
 
-int yylex(void);
-void yyerror(const char *s);
+    newNode->data = data;
+    newNode->left = left;
+    newNode->right = right;
 
-Node *root;
+    return newNode;
+  }
+
+  void levelOrder(Node *root){
+    Node *queue[100];
+    int front = 0,rear = 0;
+    queue[rear++] = root;
+
+    while(front < rear){
+      int nodesInLevel = rear - front;
+
+      while(nodesInLevel > 0){
+        Node *current = queue[front++];
+        printf("%c ",current->data);
+
+        if(current->left != NULL){
+          queue[rear++] = current->left;
+        }
+
+        if(current->right != NULL){
+          queue[rear++] = current->right;
+        }
+        nodesInLevel--; 
+      }
+      printf("\n");
+    }
+  }
+
+  void yyerror(char *s){
+    printf("Invalid arithmetic expression\n\n");
+  }
+
+  int yylex(void);
 %}
 
-%union {
-    int val;
-    struct Node *node;
+%union{
+  struct Node *ptr;
+  char id;
 }
 
-%token <val> NUMBER
-%type <node> expr term factor
+%token <id> ID
+%type <ptr> E
+
+%left '+' '-'
+%left '*' '/'
 
 %%
 
-program:
-    expr '\n'
-    {
-        root = $1;
-    }
-    ;
+S : 
+  | S E '\n'      {
+                    printf("\n");
+                    levelOrder($2);
+                    printf("\n\n");
+                  }
+  | S error '\n'  { yyerrok; }
 
-expr:
-      expr '+' term
-      {
-          $$ = make_op('+', $1, $3);
-      }
-
-    | expr '-' term
-      {
-          $$ = make_op('-', $1, $3);
-      }
-
-    | term
-      {
-          $$ = $1;
-      }
-    ;
-
-term:
-      term '*' factor
-      {
-          $$ = make_op('*', $1, $3);
-      }
-
-    | term '/' factor
-      {
-          $$ = make_op('/', $1, $3);
-      }
-
-    | factor
-      {
-          $$ = $1;
-      }
-    ;
-
-factor:
-      '(' expr ')'
-      {
-          $$ = $2;
-      }
-
-    | NUMBER
-      {
-          $$ = make_num($1);
-      }
-    ;
+E : E '+' E       { $$ = createNode('+',$1,$3); }
+  | E '-' E       { $$ = createNode('-',$1,$3); }
+  | E '*' E       { $$ = createNode('*',$1,$3); }
+  | E '/' E       { $$ = createNode('/',$1,$3); }
+  | '(' E ')'     { $$ = $2; }
+  | ID            { $$ = createNode($1,NULL,NULL); }
 
 %%
 
-Node* make_num(int val)
-{
-    Node *n = malloc(sizeof(Node));
-
-    n->op = 0;
-    n->val = val;
-    n->left = NULL;
-    n->right = NULL;
-
-    return n;
-}
-
-Node* make_op(char op, Node *left, Node *right)
-{
-    Node *n = malloc(sizeof(Node));
-
-    n->op = op;
-    n->val = 0;
-    n->left = left;
-    n->right = right;
-
-    return n;
-}
-
-void preorder(Node *root)
-{
-    if (root == NULL)
-        return;
-
-    if (root->op == 0)
-        printf("%d ", root->val);
-    else
-        printf("%c ", root->op);
-
-    preorder(root->left);
-    preorder(root->right);
-}
-
-void yyerror(const char *s)
-{
-    printf("Invalid expression\n");
-}
-
-int main()
-{
-    printf("Enter expression: ");
-
-    if (yyparse() == 0)
-    {
-        printf("Preorder: ");
-        preorder(root);
-        printf("\n");
-    }
-
-    return 0;
+void main(){
+  printf("Enter Expression:\n\n");
+  yyparse();
 }

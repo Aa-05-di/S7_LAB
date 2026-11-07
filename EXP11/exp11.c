@@ -1,80 +1,120 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
-/* ---------- GRAMMAR: only this part changes ---------- */
-#define N 6
-char  lhs[N]  = {'E',   'E',   'T',   'T', 'F', 'F'};
-char *rhs[N]  = {"E+T", "T", "T*F", "F","(E)","i"};
-char  start   = 'E';
-/* ----------------------------------------------------- */
+#define MAXSIZE 100
+#define MAXPROD 20
 
-char stack[50], input[50];
-int top = -1, i = 0;
-
-int prec(char c)                    /* operator priority, 0 if not operator */
+typedef struct
 {
-    if (c == '+' || c == '-') return 1;
-    if (c == '*' || c == '/') return 2;
-    return 0;
+    char st[MAXSIZE];
+    int top;
+} stack;
+
+typedef struct
+{
+    char stack[MAXSIZE][MAXSIZE];
+    char action[MAXSIZE][40];
+    int pos[MAXSIZE];
+    int steps;
+} table;
+
+void record(int post, char action[], stack *s, table *t)
+{
+    int len = s->top + 1;
+    strncpy(t->stack[t->steps], s->st, len);
+    t->stack[t->steps][len] = '\0';
+
+    t->pos[t->steps] = post;
+    strcpy(t->action[t->steps], action);
+
+    t->steps++;
 }
 
-int rule_prec(int r)                /* priority of the last operator in rhs */
+void display(char input[], table *t)
 {
-    for (int k = strlen(rhs[r]) - 1; k >= 0; k--)
-        if (prec(rhs[r][k]))
-            return prec(rhs[r][k]);
-    return 0;
-}
 
-int ends_with(const char *s)        /* does the stack end with s? */
-{
-    int len = strlen(s);
-    if (top + 1 < len) return 0;
-    return strncmp(stack + top + 1 - len, s, len) == 0;
-}
+    strcat(input, "$");
 
-int reduce(char next)               /* returns rule number, or -1 */
-{
-    for (int r = 0; r < N; r++)
+    printf("\n%-20s%-20s%-20s\n", "STACK", "INPUT", "ACTION");
+    printf("%-20s%-20s%-20s\n", "$", input, "START");
+
+    for (int i = 0; i < t->steps; i++)
     {
-        if (!ends_with(rhs[r]))
-            continue;
-        int rp = rule_prec(r);
-        if (rp && prec(next) > rp)  /* next operator is stronger: shift */
-            continue;
-        top -= strlen(rhs[r]) - 1;
-        stack[top] = lhs[r];
-        return r;
+        printf("%-19s%-20s%-20s\n", t->stack[i], input + t->pos[i], t->action[i]);
     }
-    return -1;
+}
+
+int srp(int n, char prod[][MAXSIZE], char input[], int pos, stack *s, table *t)
+{
+    if (input[pos] == '\0' && s->top == 0 && s->st[0] == prod[0][0])
+    {
+        display(input, t);
+        return 1;
+    }
+    for (int i = 0; i < n; i++)
+    {
+        int rhsLen = strlen(prod[i]) - 2;
+        int stackLen = s->top + 1;
+        if (stackLen >= rhsLen && strncmp(s->st + stackLen - rhsLen, prod[i] + 2, rhsLen) == 0)
+        {
+            s->top -= rhsLen;
+            s->st[++s->top] = prod[i][0];
+
+            char action[40];
+            sprintf(action, "REDUCE %c -> %s", prod[i][0], prod[i] + 2);
+            record(pos, action, s, t);
+
+            if (srp(n, prod, input, pos, s, t))
+            {
+                return 1;
+            }
+            strncpy(s->st + s->top, prod[i] + 2, rhsLen);
+            s->top += rhsLen - 1;
+            t->steps--;
+        }
+    }
+    if (input[pos] != '\0')
+    {
+        s->st[++s->top] = input[pos];
+        record(pos + 1, "SHIFT", s, t);
+        if (srp(n, prod, input, pos + 1, s, t))
+        {
+            return 1;
+        }
+        s->top--;
+        t->steps--;
+    }
+    return 0;
 }
 
 int main()
 {
-    printf("Enter string: ");
-    scanf("%49s", input);
-    printf("\n%-12s %-12s %s\n", "STACK", "INPUT", "ACTION");
-
-    while (1)
+    stack s;
+    table t;
+    int n;
+    char prod[MAXPROD][MAXSIZE], input[MAXSIZE];
+    printf("Enter the number of productions:");
+    scanf("%d", &n);
+    for (int i = 0; i < n; i++)
     {
-        int r = reduce(input[i]);
-        if (r >= 0)
-        {
-            stack[top + 1] = '\0';
-            printf("%-12s %-12s REDUCE %c->%s\n",
-                   stack, input + i, lhs[r], rhs[r]);
-            continue;
-        }
-        if (input[i] == '\0')
-            break;
-        stack[++top] = input[i++];
-        stack[top + 1] = '\0';
-        printf("%-12s %-12s SHIFT\n", stack, input + i);
+        scanf("%s", prod[i]);
+    }
+    printf("Enter the input:");
+    scanf("%s", input);
+
+    s.top = -1;
+    t.steps = 0;
+
+    if (srp(n, prod, input, 0, &s, &t))
+    {
+        printf("String accepted\n");
+    }
+    else
+    {
+        printf("String rejected\n");
     }
 
-    if (top == 0 && stack[0] == start)
-        printf("\nAccepted\n");
-    else
-        printf("\nRejected\n");
     return 0;
 }
